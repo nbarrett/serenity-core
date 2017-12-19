@@ -1,5 +1,6 @@
 package net.serenitybdd.demos.todos.features.stepdefinitions;
 
+import cucumber.api.PendingException;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -47,4 +48,9 @@ public class DeleteTodoStepDefinitions {
     }
 
 
+    @Given("^I have a step that doesn't call screenplay$")
+    public void iHaveAStepThatDoesntCallScreenplay() throws Throwable {
+        System.out.println("I have a step that doesn't call screenplay!");
+//        throw new RuntimeException("wahooo bang!");
+    }
 }
