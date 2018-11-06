@@ -241,11 +241,15 @@ public class RootDirectory {
         List<File> results;
         if (ThucydidesSystemProperty.SERENITY_REQUIREMENTS_DIR.isDefinedIn(environmentVariables)) {
             results = new ArrayList<>();
+        } else if (ThucydidesSystemProperty.SERENITY_REQUIREMENTS_DIR_MANDATORY.booleanFrom(environmentVariables, false)) {
+            throw new IllegalStateException(String.format(
+                "Property %s must be defined for the current project running from %s, given that property %s=true. This validation has been added to avoid avoid time-consuming directory scans of the entire project file system.",
+                ThucydidesSystemProperty.SERENITY_REQUIREMENTS_DIR, root, ThucydidesSystemProperty.SERENITY_REQUIREMENTS_DIR_MANDATORY));
         } else {
             results = listDirectories(root).parallelStream()
-                    .filter(path -> path.endsWith("src/test/resources"))
-                    .map(Path::toFile)
-                    .collect(Collectors.toList());
+                .filter(path -> path.endsWith("src/test/resources"))
+                .map(Path::toFile)
+                .collect(Collectors.toList());
         }
         RESOURCE_DIRECTORY_CACHE.put(root,results);
         LOGGER.debug("Resource directories found in {} in {} ms: {}", root, stopwatch.stop(), results);

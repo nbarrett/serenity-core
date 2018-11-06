@@ -766,6 +766,11 @@ public enum ThucydidesSystemProperty {
     SERENITY_REQUIREMENTS_DIR,
 
     /**
+     * Use this property if you need to enforce that SERENITY_REQUIREMENTS_DIR is configured on your project.
+     */
+    SERENITY_REQUIREMENTS_DIR_MANDATORY,
+
+    /**
      * if specified, should point to a folder that contains one or more Serenity CSV output files
      */
     SERENITY_TEST_STATISTICS_DIR,
