@@ -1,6 +1,8 @@
 package net.thucydides.core.reports.html;
 
 import net.serenitybdd.core.SerenitySystemProperties;
+import net.serenitybdd.core.buildinfo.BuildInfoProvider;
+import net.serenitybdd.core.buildinfo.BuildProperties;
 import net.serenitybdd.core.time.Stopwatch;
 import net.serenitybdd.reports.model.FrequentFailure;
 import net.serenitybdd.reports.model.FrequentFailures;
@@ -56,6 +58,7 @@ public class HtmlAggregateStoryReporter extends HtmlReporter implements UserStor
 
     private final EnvironmentVariables environmentVariables;
     private FormatConfiguration formatConfiguration;
+    private final BuildProperties buildProperties;
     private boolean generateTestOutcomeReports = false;
 
     public static final CopyOption[] COPY_OPTIONS = new CopyOption[]{StandardCopyOption.COPY_ATTRIBUTES};
@@ -106,6 +109,7 @@ public class HtmlAggregateStoryReporter extends HtmlReporter implements UserStor
         this.issueTracking = issueTracking;
         this.requirementsConfiguration = new RequirementsConfiguration(getEnvironmentVariables());
         this.environmentVariables = environmentVariables;
+        this.buildProperties = new BuildInfoProvider(environmentVariables).getBuildProperties();
         this.formatConfiguration = new FormatConfiguration(environmentVariables);
         this.reportNameProvider = new ReportNameProvider(NO_CONTEXT, ReportType.HTML, requirements.getRequirementsService());
         this.requirements = requirements;
@@ -149,7 +153,7 @@ public class HtmlAggregateStoryReporter extends HtmlReporter implements UserStor
         Stopwatch stopwatch = Stopwatch.started();
         LOGGER.debug("Generating test results for {} tests", testOutcomes.getTestCount());
 
-        FreemarkerContext context = new FreemarkerContext(environmentVariables, requirements.getRequirementsService(), issueTracking, relativeLink);
+        FreemarkerContext context = new FreemarkerContext(environmentVariables, requirements.getRequirementsService(), issueTracking, buildProperties, relativeLink);
 
         RequirementsOutcomes requirementsOutcomes = requirements.getRequirementsOutcomeFactory().buildRequirementsOutcomesFrom(testOutcomes);
 

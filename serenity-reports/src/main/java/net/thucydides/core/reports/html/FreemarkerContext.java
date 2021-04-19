@@ -54,12 +54,13 @@ public class FreemarkerContext {
                              RequirementsService requirements,
                              IssueTracking issueTracking,
                              String relativeLink,
+                             BuildProperties buildProperties,
                              TestTag parentTag) {
         this.environmentVariables = environmentVariables;
         this.requirements = requirements;
         this.issueTracking = issueTracking;
         this.relativeLink = relativeLink;
-        buildProperties = new BuildInfoProvider(environmentVariables).getBuildProperties();
+        this.buildProperties = buildProperties;
         this.parentTag = parentTag;
         this.requirementsService = Injectors.getInjector().getInstance(RequirementsService.class);
     }
@@ -68,8 +69,9 @@ public class FreemarkerContext {
     public FreemarkerContext(EnvironmentVariables environmentVariables,
                              RequirementsService requirements,
                              IssueTracking issueTracking,
+                             BuildProperties buildProperties,
                              String relativeLink) {
-        this(environmentVariables, requirements, issueTracking, relativeLink, TestTag.EMPTY_TAG);
+        this(environmentVariables, requirements, issueTracking, relativeLink, buildProperties, TestTag.EMPTY_TAG);
     }
 
     public Map<String, Object> getBuildContext(TestOutcomes completeTestOutcomes,
@@ -216,6 +218,6 @@ public class FreemarkerContext {
     }
 
     public FreemarkerContext withParentTag(TestTag knownTag) {
-        return new FreemarkerContext(environmentVariables, requirements, issueTracking, relativeLink, knownTag);
+        return new FreemarkerContext(environmentVariables, requirements, issueTracking, relativeLink, buildProperties, knownTag);
     }
 }

@@ -18,7 +18,11 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.apache.commons.lang3.StringUtils.*;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.strip;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Loads Thucydides preferences from a local file called thucydides.properties.
@@ -30,9 +34,9 @@ import static org.apache.commons.lang3.StringUtils.*;
 public class PropertiesFileLocalPreferences implements LocalPreferences {
 
     public static final String TYPESAFE_CONFIG_FILE = "serenity.conf";
-    private File workingDirectory;
+    private final File workingDirectory;
     private File homeDirectory;
-    private File mavenModuleDirectory;
+    private final File mavenModuleDirectory;
     private final EnvironmentVariables environmentVariables;
     private static final Logger LOGGER = LoggerFactory.getLogger(PropertiesFileLocalPreferences.class);
 
@@ -41,13 +45,13 @@ public class PropertiesFileLocalPreferences implements LocalPreferences {
     @Inject
     public PropertiesFileLocalPreferences(EnvironmentVariables environmentVariables) {
         this.environmentVariables = environmentVariables;
-        this.homeDirectory = new File(System.getProperty("user.home"));
-        this.workingDirectory = new File(System.getProperty("user.dir"));
-        final String mavenBuildDir = System.getProperty(SystemPropertiesConfiguration.PROJECT_BUILD_DIRECTORY);
+        homeDirectory = new File(System.getProperty("user.home"));
+        workingDirectory = new File(System.getProperty("user.dir"));
+        String mavenBuildDir = System.getProperty(SystemPropertiesConfiguration.PROJECT_BUILD_DIRECTORY);
         if (!isEmpty(mavenBuildDir)) {
-            this.mavenModuleDirectory = new File(mavenBuildDir);
+            mavenModuleDirectory = new File(mavenBuildDir);
         } else {
-            this.mavenModuleDirectory = this.workingDirectory;
+            mavenModuleDirectory = workingDirectory;
         }
     }
 
@@ -59,9 +63,17 @@ public class PropertiesFileLocalPreferences implements LocalPreferences {
         this.homeDirectory = homeDirectory;
     }
 
+    @Override
     public void loadPreferences() throws IOException {
-
-        updatePreferencesFrom(
+        LOGGER.info("started loadPreferences()");
+        if (StringUtils.isNotBlank(System.getProperty("serenity.properties.use.typeSafeOnly"))) {
+            LOGGER.info("using typeSafeOnly as serenity.properties.use.typeSafeOnly flag is set");
+            updatePreferencesFrom(typesafeConfigPreferences());
+        } else if (StringUtils.isNotBlank(System.getProperty("serenity.properties.use.sensiblePaths"))) {
+            LOGGER.info("using sensiblePaths as serenity.properties.use.sensiblePaths flag is set");
+            updatePreferencesFrom(preferencesIn(preferencesFileWithAbsolutePath()), typesafeConfigPreferencesInCustomDefinedConfigFile(), typesafeConfigPreferences(), preferencesIn(preferencesFileInWorkingDirectory()), preferencesIn(preferencesFileInHomeDirectory()));
+        } else {
+            updatePreferencesFrom(
                 preferencesIn(preferencesFileWithAbsolutePath()),
                 preferencesIn(legacyPreferencesFileWithAbsolutePath()),
                 typesafeConfigPreferencesInCustomDefinedConfigFile(),
@@ -73,7 +85,11 @@ public class PropertiesFileLocalPreferences implements LocalPreferences {
                 preferencesIn(preferencesFileInHomeDirectory()),
                 preferencesIn(legacyPreferencesFileInHomeDirectory()),
                 preferencesInClasspath());
+        }
+
+        LOGGER.info("finished loadPreferences()");
     }
+
 
     private Properties preferencesInClasspath() throws IOException {
         try (InputStream propertiesOnClasspath = propertiesInputStream()) {
