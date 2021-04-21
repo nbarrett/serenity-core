@@ -1,13 +1,17 @@
 package net.thucydides.core.reports.html;
 
 import com.google.common.base.Preconditions;
+
 import net.serenitybdd.core.reports.styling.TagStylist;
 import net.serenitybdd.core.time.Stopwatch;
-import net.thucydides.core.ThucydidesSystemProperty;
 import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.images.ResizableImage;
 import net.thucydides.core.issues.IssueTracking;
-import net.thucydides.core.model.*;
+import net.thucydides.core.model.ReportType;
+import net.thucydides.core.model.Story;
+import net.thucydides.core.model.TestOutcome;
+import net.thucydides.core.model.TestResult;
+import net.thucydides.core.model.TestTag;
 import net.thucydides.core.model.formatters.ReportFormatter;
 import net.thucydides.core.model.screenshots.Screenshot;
 import net.thucydides.core.reports.AcceptanceTestReporter;
@@ -20,6 +24,7 @@ import net.thucydides.core.util.EnvironmentVariables;
 import net.thucydides.core.util.Inflector;
 import net.thucydides.core.util.TagInflector;
 import net.thucydides.core.util.VersionProvider;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +36,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static net.thucydides.core.model.ReportType.HTML;
 import static net.thucydides.core.reports.html.ReportNameProvider.NO_CONTEXT;
@@ -120,11 +128,11 @@ public class HtmlAcceptanceTestReporter extends HtmlReporter implements Acceptan
             URI htmlReport = getOutputDirectory().toPath().resolve(reportFilename).toUri();
             String underline = underscores("| TEST NAME:   "  + testName);
             String message = underline + System.lineSeparator()
-                            +"| TEST NAME:   " + colored.bold(testName) + System.lineSeparator()
-                            +"| RESULT:      " + result + System.lineSeparator()
-                            +"| REQUIREMENT: " + storyName + System.lineSeparator()
-                            +"| REPORT:      " + colored.cyan(htmlReport.toString()) + System.lineSeparator()
-                            + underline;
+                    +"| TEST NAME:   " + colored.bold(testName) + System.lineSeparator()
+                    +"| RESULT:      " + result + System.lineSeparator()
+                    +"| REQUIREMENT: " + storyName + System.lineSeparator()
+                    +"| REPORT:      " + colored.cyan(htmlReport.toString()) + System.lineSeparator()
+                    + underline;
 
             LOGGER.info(System.lineSeparator() + message);
         }
@@ -152,8 +160,8 @@ public class HtmlAcceptanceTestReporter extends HtmlReporter implements Acceptan
 
 
     private File generateReportPage(final Map<String, Object> context,
-                                      final String template,
-                                      final String outputFile) throws IOException {
+                                    final String template,
+                                    final String outputFile) throws IOException {
 
         Stopwatch stopwatch = Stopwatch.started();
 
@@ -193,8 +201,8 @@ public class HtmlAcceptanceTestReporter extends HtmlReporter implements Acceptan
     }
 
     private void addParentRequirmentFieldToContext(TestOutcome testOutcome, Map<String, Object> context) {
-        java.util.Optional<Requirement> parentRequirement = requirementsService.getParentRequirementFor(testOutcome);
-        java.util.Optional<Story> featureOrStory = java.util.Optional.ofNullable(testOutcome.getUserStory());
+        Optional<Requirement> parentRequirement = requirementsService.getParentRequirementFor(testOutcome);
+        Optional<Story> featureOrStory = Optional.ofNullable(testOutcome.getUserStory());
         String parentTitle = null;
 
         if (parentRequirement.isPresent()) {
@@ -216,7 +224,7 @@ public class HtmlAcceptanceTestReporter extends HtmlReporter implements Acceptan
     }
 
     private void addTags(TestOutcome testOutcome, Map<String, Object> context, String parentTitle) {
-        TagFilter tagFilter = new TagFilter(getEnvironmentVariables());
+        TagFilter tagFilter = new TagFilter(getEnvironmentVariables(), requirementsService);
         Set<TestTag> filteredTags = (parentTitle != null) ? tagFilter.removeTagsWithName(testOutcome.getTags(), parentTitle) : testOutcome.getTags();
         filteredTags = tagFilter.removeHiddenTagsFrom(filteredTags);
         context.put("filteredTags", filteredTags);
@@ -281,8 +289,8 @@ public class HtmlAcceptanceTestReporter extends HtmlReporter implements Acceptan
     }
 
     @Override
-    public java.util.Optional<OutcomeFormat> getFormat() {
-        return java.util.Optional.of(OutcomeFormat.HTML);
+    public Optional<OutcomeFormat> getFormat() {
+        return Optional.of(OutcomeFormat.HTML);
     }
 
 }

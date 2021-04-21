@@ -2,14 +2,21 @@ package net.thucydides.core.reports.html;
 
 
 import com.google.common.base.Splitter;
+
 import net.thucydides.core.ThucydidesSystemProperty;
 import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.model.TestTag;
 import net.thucydides.core.requirements.RequirementsService;
 import net.thucydides.core.util.EnvironmentVariables;
+
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TagFilter {
@@ -21,7 +28,11 @@ public class TagFilter {
             = Arrays.asList("manual-result","manual-test-evidence","manual-last-tested");
 
     public TagFilter(EnvironmentVariables environmentVariables) {
-        this.requirementsService = Injectors.getInjector().getInstance(RequirementsService.class);
+        this(environmentVariables, Injectors.getInjector().getInstance(RequirementsService.class));
+    }
+
+    public TagFilter(EnvironmentVariables environmentVariables, RequirementsService requirementsService) {
+        this.requirementsService = requirementsService;
         this.environmentVariables = environmentVariables;
     }
 

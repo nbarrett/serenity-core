@@ -112,11 +112,10 @@ public class TestTag implements Comparable<TestTag> {
         if (this.equals(testTag)) {
             return true;
         }
-        String[] testTagSplitOnDot = testTag.normalisedName().split(".");
-        if (testTagSplitOnDot[testTagSplitOnDot.length - 1].equals(this.normalisedName()) && (this.getType().equals(testTag.getType()))) {
+        if (testTag.normalisedName().endsWith("." + this.normalisedName()) && this.getType().equals(testTag.getType())) {
             return true;
         }
-        return (this.normalisedName().endsWith("/" + testTag.normalisedName())) && (this.getType().equals(testTag.getType()));
+        return this.normalisedName().endsWith("/" + testTag.normalisedName()) && this.getType().equals(testTag.getType());
     }
 
     public static class TestTagBuilder {
