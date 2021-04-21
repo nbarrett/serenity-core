@@ -164,7 +164,7 @@ class RequirementsOverviewReportingTask extends BaseReportingTask implements Rep
         List<ScenarioOutcomeGroup> scenarioGroups = new ArrayList<>();
         if (!scenariosWithoutARule.isEmpty()) {
             ScenarioOutcomeGroup scenarioGroup = new ScenarioOutcomeGroup(scenariosWithoutARule);
-            if (requirements.get(0).getBackground() != null) {
+            if (!requirements.isEmpty() && requirements.get(0).getBackground() != null) {
                 scenarioGroup.setBackgroundTitle(requirements.get(0).getBackground().getTitle());
                 scenarioGroup.setBackgroundDescription(requirements.get(0).getBackground().getDescription());
             }
