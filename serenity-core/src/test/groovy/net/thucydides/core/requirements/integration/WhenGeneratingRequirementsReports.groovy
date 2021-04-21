@@ -13,8 +13,6 @@ import net.thucydides.core.requirements.reports.MultipleSourceRequirmentsOutcome
 import net.thucydides.core.requirements.reports.RequirementsOutcomeFactory
 import net.thucydides.core.requirements.reports.RequirementsOutcomes
 import org.joda.time.DateTime
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
 import spock.lang.Specification
 
 import java.nio.file.Files

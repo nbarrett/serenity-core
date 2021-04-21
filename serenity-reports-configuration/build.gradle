@@ -13,7 +13,7 @@ plugins {
 }
 
 ext {
-    bintrayPackage = 'serenity-reports-configration'
+    bintrayPackage = 'serenity-reports-configuration'
     projectDescription = 'Serenity Report Configuration'
 }
 

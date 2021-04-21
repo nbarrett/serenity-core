@@ -1,7 +1,6 @@
 package net.thucydides.core.tags;
 
 import net.serenitybdd.core.collect.NewList;
-import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.model.TestOutcome;
 import net.thucydides.core.model.TestTag;
 import net.thucydides.core.requirements.RequirementsService;
@@ -20,10 +19,6 @@ public class BreadcrumbTagFilter {
 
     public BreadcrumbTagFilter(RequirementsService requirementsService) {
         this.requirementsService = requirementsService;
-    }
-
-    public BreadcrumbTagFilter() {
-        this(Injectors.getInjector().getInstance(RequirementsService.class));
     }
 
     public boolean isRequirementTag(TestTag tag) {

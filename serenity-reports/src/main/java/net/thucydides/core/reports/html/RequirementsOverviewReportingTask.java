@@ -215,7 +215,7 @@ class RequirementsOverviewReportingTask extends BaseReportingTask implements Rep
             context.put("breadcrumbs", Breadcrumbs.forRequirementsTag(this.requirementsOutcomes.getParentRequirement().get().asTag())
                     .fromTagsIn(allTags));
         } else {
-            context.put("breadcrumbs", new BreadcrumbTagFilter().getRequirementBreadcrumbsFrom(requirementsOutcomes));
+            context.put("breadcrumbs", new BreadcrumbTagFilter(requirementsService).getRequirementBreadcrumbsFrom(requirementsOutcomes));
         }
     }
 

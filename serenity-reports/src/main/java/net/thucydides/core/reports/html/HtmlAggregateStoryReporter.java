@@ -7,6 +7,7 @@ import net.serenitybdd.core.time.Stopwatch;
 import net.serenitybdd.reports.model.FrequentFailure;
 import net.serenitybdd.reports.model.FrequentFailures;
 import net.thucydides.core.ThucydidesSystemProperty;
+import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.issues.IssueTracking;
 import net.thucydides.core.model.ReportType;
 import net.thucydides.core.model.TestTag;
@@ -60,6 +61,7 @@ public class HtmlAggregateStoryReporter extends HtmlReporter implements UserStor
     private FormatConfiguration formatConfiguration;
     private final BuildProperties buildProperties;
     private boolean generateTestOutcomeReports = false;
+    private final RequirementsService requirementsService;
 
     public static final CopyOption[] COPY_OPTIONS = new CopyOption[]{StandardCopyOption.COPY_ATTRIBUTES};
 
@@ -113,6 +115,7 @@ public class HtmlAggregateStoryReporter extends HtmlReporter implements UserStor
         this.formatConfiguration = new FormatConfiguration(environmentVariables);
         this.reportNameProvider = new ReportNameProvider(NO_CONTEXT, ReportType.HTML, requirements.getRequirementsService());
         this.requirements = requirements;
+        this.requirementsService = Injectors.getInjector().getInstance(RequirementsService.class);
     }
 
     public OutcomeFormat getFormat() {
@@ -153,7 +156,7 @@ public class HtmlAggregateStoryReporter extends HtmlReporter implements UserStor
         Stopwatch stopwatch = Stopwatch.started();
         LOGGER.debug("Generating test results for {} tests", testOutcomes.getTestCount());
 
-        FreemarkerContext context = new FreemarkerContext(environmentVariables, requirements.getRequirementsService(), issueTracking, buildProperties, relativeLink);
+        FreemarkerContext context = new FreemarkerContext(environmentVariables, requirementsService, issueTracking, buildProperties, relativeLink);
 
         RequirementsOutcomes requirementsOutcomes = requirements.getRequirementsOutcomeFactory().buildRequirementsOutcomesFrom(testOutcomes);
 
@@ -207,7 +210,7 @@ public class HtmlAggregateStoryReporter extends HtmlReporter implements UserStor
                                 requirements.getRequirementsService(),
                                 getOutputDirectory(),
                                 reportNameProvider,
-                                testOutcomes.withErrorType(failure.getType()).withLabel("Tests with error: " + failure.getName()),
+                                testOutcomes.withErrorType(failure.getType()).withLabel("Tests with error: " + failure.getName(), requirementsService),
                                 failure.getType())
                 )
         );

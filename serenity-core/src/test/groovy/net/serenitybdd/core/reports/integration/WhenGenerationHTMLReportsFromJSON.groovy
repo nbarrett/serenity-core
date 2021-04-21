@@ -10,6 +10,7 @@ import net.thucydides.core.reports.TestOutcomeStream
 import net.thucydides.core.reports.TestOutcomes
 import net.thucydides.core.reports.html.HtmlAcceptanceTestReporter
 import net.thucydides.core.reports.json.JSONTestOutcomeReporter
+import net.thucydides.core.requirements.RequirementsService
 import net.thucydides.core.util.MockEnvironmentVariables
 import org.assertj.core.util.Files
 import spock.lang.Shared
@@ -30,7 +31,8 @@ class WhenGenerationHTMLReportsFromJSON extends Specification {
     def setup() {
         def environmentVariables = new MockEnvironmentVariables();
         IssueTracking issueTracking = new SystemPropertiesIssueTracking(environmentVariables);
-        reporter = new HtmlAcceptanceTestReporter(environmentVariables, issueTracking);
+        RequirementsService requirementsService= Injectors.getInjector().getInstance(RequirementsService.class)
+        reporter = new HtmlAcceptanceTestReporter(environmentVariables, requirementsService, issueTracking);
         outputDirectory = Files.newTemporaryFolder()
         reporter.setOutputDirectory(outputDirectory)
 

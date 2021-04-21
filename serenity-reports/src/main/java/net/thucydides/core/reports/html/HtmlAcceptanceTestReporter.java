@@ -71,20 +71,7 @@ public class HtmlAcceptanceTestReporter extends HtmlReporter implements Acceptan
         this.requirementsService = Injectors.getInjector().getInstance(RequirementsService.class);
     }
 
-    public HtmlAcceptanceTestReporter(RequirementsService requirementsService) {
-        super();
-        this.requirementsService = requirementsService;
-        this.issueTracking = Injectors.getInjector().getInstance(IssueTracking.class);
-    }
-
     public HtmlAcceptanceTestReporter(final EnvironmentVariables environmentVariables,
-                                      final IssueTracking issueTracking) {
-        super(environmentVariables);
-        this.issueTracking = issueTracking;
-        this.requirementsService = Injectors.getInjector().getInstance(RequirementsService.class);
-    }
-
-    HtmlAcceptanceTestReporter(final EnvironmentVariables environmentVariables,
                                final RequirementsService requirementsService,
                                final IssueTracking issueTracking) {
         super(environmentVariables);
@@ -191,7 +178,7 @@ public class HtmlAcceptanceTestReporter extends HtmlReporter implements Acceptan
         context.put("currentTag", TestTag.EMPTY_TAG);
         context.put("inflection", Inflector.getInstance());
         EnvironmentVariables environmentVariables = Injectors.getInjector().getInstance(EnvironmentVariables.class);
-        context.put("tagInflector", new TagInflector(environmentVariables));
+        context.put("tagInflector", new TagInflector(environmentVariables, requirementsService));
         context.put("styling", TagStylist.from(environmentVariables));
         context.put("requirementTypes", requirementsService.getRequirementTypes());
 

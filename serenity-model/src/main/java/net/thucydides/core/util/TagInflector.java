@@ -1,6 +1,7 @@
 package net.thucydides.core.util;
 
 import net.thucydides.core.reports.html.TagFilter;
+import net.thucydides.core.requirements.RequirementsService;
 
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
@@ -10,6 +11,10 @@ public class TagInflector {
 
     public TagInflector(EnvironmentVariables environmentVariables) {
         tagFilter = new TagFilter(environmentVariables);
+    }
+
+    public TagInflector(EnvironmentVariables environmentVariables, RequirementsService requirementsService) {
+        tagFilter = new TagFilter(environmentVariables, requirementsService);
     }
 
     public InflectableTag ofTag(String tagType, String tagName) {

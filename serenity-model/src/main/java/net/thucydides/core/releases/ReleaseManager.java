@@ -117,7 +117,7 @@ public class ReleaseManager {
         List<RequirementOutcome> requirementOutcomes = new ArrayList<>();
         for (RequirementOutcome outcome : outcomes) {
             List<TestOutcome> enrichedOutcomes = enrichOutcomesWithReleaseTags(outcome.getTestOutcomes().getOutcomes());
-            requirementOutcomes.add(outcome.withTestOutcomes(TestOutcomes.of(enrichedOutcomes)));
+            requirementOutcomes.add(outcome.withTestOutcomes(TestOutcomes.of(enrichedOutcomes, requirementsService)));
         }
         return requirementOutcomes;
     }

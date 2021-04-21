@@ -5,8 +5,6 @@ import net.thucydides.core.reports.OutcomeFormat
 import net.thucydides.core.reports.TestOutcomeLoader
 import net.thucydides.core.reports.TestOutcomes
 import net.thucydides.core.util.MockEnvironmentVariables
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
 import spock.lang.Specification
 
 import java.nio.file.Files

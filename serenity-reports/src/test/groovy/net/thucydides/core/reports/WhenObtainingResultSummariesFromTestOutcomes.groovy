@@ -6,8 +6,6 @@ import spock.lang.Unroll
 
 import java.nio.file.Paths
 
-import static net.thucydides.core.util.TestResources.directoryInClasspathCalled
-
 class WhenObtainingResultSummariesFromTestOutcomes extends Specification {
     def currentLocale = Locale.getDefault()
 

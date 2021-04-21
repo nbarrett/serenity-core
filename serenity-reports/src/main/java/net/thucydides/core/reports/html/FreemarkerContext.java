@@ -1,12 +1,9 @@
 package net.thucydides.core.reports.html;
 
 import com.google.common.base.Splitter;
-import net.serenitybdd.core.buildinfo.BuildInfoProvider;
 import net.serenitybdd.core.buildinfo.BuildProperties;
 import net.serenitybdd.core.reports.styling.TagStylist;
 import net.serenitybdd.reports.model.*;
-import net.thucydides.core.ThucydidesSystemProperty;
-import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.issues.IssueTracking;
 import net.thucydides.core.model.NumericalFormatter;
 import net.thucydides.core.model.ReportType;
@@ -14,12 +11,12 @@ import net.thucydides.core.model.TestOutcome;
 import net.thucydides.core.model.TestTag;
 import net.thucydides.core.model.formatters.ReportFormatter;
 import net.thucydides.core.reports.ReportOptions;
-import net.thucydides.core.requirements.model.Requirement;
-import net.thucydides.core.tags.OutcomeTagFilter;
 import net.thucydides.core.reports.TestOutcomes;
 import net.thucydides.core.requirements.RequirementsService;
+import net.thucydides.core.requirements.model.Requirement;
 import net.thucydides.core.requirements.reports.ScenarioOutcome;
 import net.thucydides.core.requirements.reports.ScenarioOutcomes;
+import net.thucydides.core.tags.OutcomeTagFilter;
 import net.thucydides.core.util.EnvironmentVariables;
 import net.thucydides.core.util.Inflector;
 import net.thucydides.core.util.TagInflector;
@@ -42,43 +39,40 @@ import static net.thucydides.core.reports.html.ReportNameProvider.NO_CONTEXT;
 public class FreemarkerContext {
 
     private final EnvironmentVariables environmentVariables;
-    private final RequirementsService requirements;
+    private final RequirementsService requirementsService;
     private final IssueTracking issueTracking;
     private final String relativeLink;
     private final BuildProperties buildProperties;
     private final TestTag parentTag;
-    private final RequirementsService requirementsService;
-
 
     public FreemarkerContext(EnvironmentVariables environmentVariables,
-                             RequirementsService requirements,
+                             RequirementsService requirementsService,
                              IssueTracking issueTracking,
                              String relativeLink,
                              BuildProperties buildProperties,
                              TestTag parentTag) {
         this.environmentVariables = environmentVariables;
-        this.requirements = requirements;
+        this.requirementsService = requirementsService;
         this.issueTracking = issueTracking;
         this.relativeLink = relativeLink;
         this.buildProperties = buildProperties;
         this.parentTag = parentTag;
-        this.requirementsService = Injectors.getInjector().getInstance(RequirementsService.class);
     }
 
 
     public FreemarkerContext(EnvironmentVariables environmentVariables,
-                             RequirementsService requirements,
+                             RequirementsService requirementsService,
                              IssueTracking issueTracking,
                              BuildProperties buildProperties,
                              String relativeLink) {
-        this(environmentVariables, requirements, issueTracking, relativeLink, buildProperties, TestTag.EMPTY_TAG);
+        this(environmentVariables, requirementsService, issueTracking, relativeLink, buildProperties, TestTag.EMPTY_TAG);
     }
 
     public Map<String, Object> getBuildContext(TestOutcomes completeTestOutcomes,
                                                ReportNameProvider reportName,
                                                boolean useFiltering) {
         Map<String, Object> context = new HashMap<>();
-        TagFilter tagFilter = new TagFilter(environmentVariables);
+        TagFilter tagFilter = new TagFilter(environmentVariables, requirementsService);
         OutcomeTagFilter outcomeFilter = new OutcomeTagFilter(environmentVariables);
 
         // WIP
@@ -98,12 +92,12 @@ public class FreemarkerContext {
         context.put("parentTag", parentTag);
         context.put("reportName", reportName);
 
-        context.put("absoluteReportName", new ReportNameProvider(NO_CONTEXT, ReportType.HTML, requirements));
+        context.put("absoluteReportName", new ReportNameProvider(NO_CONTEXT, ReportType.HTML, requirementsService));
 
-        context.put("reportOptions", new ReportOptions(environmentVariables));
+        context.put("reportOptions", new ReportOptions(environmentVariables, requirementsService));
         context.put("timestamp", timestampFrom(new DateTime()));
-        context.put("requirementTypes", requirements.getRequirementTypes());
-        context.put("leafRequirementType", last(requirements.getRequirementTypes()));
+        context.put("requirementTypes", requirementsService.getRequirementTypes());
+        context.put("leafRequirementType", last(requirementsService.getRequirementTypes()));
         addFormattersToContext(context);
 
         context.put("totalTestDuration", formattedDuration(Duration.ofMillis(testOutcomes.getDuration())));
@@ -138,11 +132,11 @@ public class FreemarkerContext {
                 .splitToList(REPORT_TAGTYPES.from(environmentVariables, "feature"));
 
         context.put("inflection", Inflector.getInstance());
-        context.put("tagInflector", new TagInflector(environmentVariables));
+        context.put("tagInflector", new TagInflector(environmentVariables, requirementsService));
 
         RequirementsFilter requirementsFilter = new RequirementsFilter(environmentVariables);
 
-        Collection<TestTag> coveredTags = requirements.getRequirementsWithTagsOfType(tagTypes).stream()
+        Collection<TestTag> coveredTags = requirementsService.getRequirementsWithTagsOfType(tagTypes).stream()
                 .filter(requirement -> testOutcomes.containTestFor(requirement) || requirement.containsNoScenarios())
                 .filter(requirementsFilter::inDisplayOnlyTags)
                 .map(Requirement::asTag)
@@ -154,7 +148,7 @@ public class FreemarkerContext {
 //                .collect(Collectors.toSet());
 
         context.put("coverage", TagCoverage.from(testOutcomes)
-                .showingTags(requirements.getTagsOfType(tagTypes))
+                .showingTags(requirementsService.getTagsOfType(tagTypes))
                 .showingTags(coveredTags)
                 .forTagTypes(tagTypes));
         context.put("backgroundColor", new BackgroundColor());
@@ -173,7 +167,7 @@ public class FreemarkerContext {
     }
 
     private void addTags(TestOutcome testOutcome, Map<String, Object> context, String parentTitle) {
-        TagFilter tagFilter = new TagFilter(environmentVariables);
+        TagFilter tagFilter = new TagFilter(environmentVariables, requirementsService);
         Set<TestTag> filteredTags = (parentTitle != null) ? tagFilter.removeTagsWithName(testOutcome.getTags(), parentTitle) : testOutcome.getTags();
         filteredTags = tagFilter.removeHiddenTagsFrom(filteredTags);
         context.put("filteredTags", filteredTags);
@@ -205,10 +199,10 @@ public class FreemarkerContext {
         context.put("reportFormatter", reportFormatter);
         context.put("formatted", new NumericalFormatter());
         context.put("inflection", Inflector.getInstance());
-        context.put("tagInflector", new TagInflector(environmentVariables));
+        context.put("tagInflector", new TagInflector(environmentVariables, requirementsService));
         context.put("styling", TagStylist.from(environmentVariables));
         context.put("relativeLink", relativeLink);
-        context.put("reportOptions", new ReportOptions(environmentVariables));
+        context.put("reportOptions", new ReportOptions(environmentVariables, requirementsService));
         context.put("showDetailedStoryDescription", SERENITY_SHOW_STORY_DETAILS_IN_TESTS.booleanFrom(environmentVariables, false));
     }
 
@@ -218,6 +212,6 @@ public class FreemarkerContext {
     }
 
     public FreemarkerContext withParentTag(TestTag knownTag) {
-        return new FreemarkerContext(environmentVariables, requirements, issueTracking, relativeLink, buildProperties, knownTag);
+        return new FreemarkerContext(environmentVariables, requirementsService, issueTracking, relativeLink, buildProperties, knownTag);
     }
 }

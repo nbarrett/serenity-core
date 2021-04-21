@@ -2,12 +2,14 @@ package net.thucydides.core.reports.integration;
 
 import net.thucydides.core.annotations.Feature;
 import net.thucydides.core.annotations.Story;
+import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.issues.IssueTracking;
 import net.thucydides.core.issues.SystemPropertiesIssueTracking;
 import net.thucydides.core.model.TestOutcome;
 import net.thucydides.core.model.TestStep;
 import net.thucydides.core.reports.AcceptanceTestReporter;
 import net.thucydides.core.reports.html.HtmlAcceptanceTestReporter;
+import net.thucydides.core.requirements.RequirementsService;
 import net.thucydides.core.screenshots.ScreenshotAndHtmlSource;
 import net.thucydides.core.util.ExtendedTemporaryFolder;
 import net.thucydides.core.util.FileSystemUtils;
@@ -37,7 +39,8 @@ public class AbstractReportGenerationTest {
     public void setupTestReporter() throws IOException {
         environmentVariables = new MockEnvironmentVariables();
         IssueTracking issueTracking = new SystemPropertiesIssueTracking(environmentVariables);
-        reporter = new HtmlAcceptanceTestReporter(environmentVariables, issueTracking);
+        RequirementsService requirementsService = Injectors.getInjector().getInstance(RequirementsService.class);
+        reporter = new HtmlAcceptanceTestReporter(environmentVariables, requirementsService, issueTracking);
         outputDirectory = temporaryDirectory.newFolder();
         reporter.setOutputDirectory(outputDirectory);
     }

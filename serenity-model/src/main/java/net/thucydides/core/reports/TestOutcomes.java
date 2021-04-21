@@ -68,7 +68,8 @@ public class TestOutcomes {
                            TestTag testTag,
                            TestResult resultFilter,
                            TestOutcomes rootOutcomes,
-                           EnvironmentVariables environmentVariables) {
+                           EnvironmentVariables environmentVariables,
+                           RequirementsService requirementsService) {
         outcomeCount = outcomeCount + outcomes.size();
 
         this.outcomes = Collections.unmodifiableList(sorted(outcomes));
@@ -79,7 +80,7 @@ public class TestOutcomes {
         this.resultFilter = resultFilter;
         this.rootOutcomes = Optional.ofNullable(rootOutcomes);
         this.environmentVariables = environmentVariables;
-        this.requirementsService = Injectors.getInjector().getInstance(RequirementsService.class);
+        this.requirementsService = requirementsService;
     }
 
     private List<TestOutcome> sorted(Collection<? extends TestOutcome> outcomes) {
@@ -93,35 +94,40 @@ public class TestOutcomes {
 
     protected TestOutcomes(Collection<? extends TestOutcome> outcomes,
                            double estimatedAverageStepCount,
-                           String label) {
-        this(outcomes, estimatedAverageStepCount, label, null, null, null, Injectors.getInjector().getProvider(EnvironmentVariables.class).get() );
+                           String label,
+                           RequirementsService requirementsService) {
+        this(outcomes, estimatedAverageStepCount, label, null, null, null, Injectors.getInjector().getProvider(EnvironmentVariables.class).get(), requirementsService);
     }
 
     protected TestOutcomes(List<? extends TestOutcome> outcomes,
                            double estimatedAverageStepCount,
                            String label,
-                           TestTag tag) {
-        this(outcomes, estimatedAverageStepCount, label, tag, null, null, Injectors.getInjector().getProvider(EnvironmentVariables.class).get() );
+                           TestTag tag,
+                           RequirementsService requirementsService) {
+        this(outcomes, estimatedAverageStepCount, label, tag, null, null, Injectors.getInjector().getProvider(EnvironmentVariables.class).get(), requirementsService);
     }
 
     protected TestOutcomes(List<? extends TestOutcome> outcomes,
                            double estimatedAverageStepCount,
                            String label,
-                           TestResult resultFilter) {
-        this(outcomes, estimatedAverageStepCount, label, null, resultFilter, null, Injectors.getInjector().getProvider(EnvironmentVariables.class).get() );
+                           TestResult resultFilter,
+                           RequirementsService requirementsService) {
+        this(outcomes, estimatedAverageStepCount, label, null, resultFilter, null, Injectors.getInjector().getProvider(EnvironmentVariables.class).get(), requirementsService);
     }
 
     protected TestOutcomes(Collection<? extends TestOutcome> outcomes,
-                           double estimatedAverageStepCount) {
-        this(outcomes, estimatedAverageStepCount, "");
+                           double estimatedAverageStepCount,
+                           RequirementsService requirementsService) {
+        this(outcomes, estimatedAverageStepCount, "", requirementsService);
     }
 
-    public TestOutcomes withLabel(String label) {
-        return new TestOutcomes(this.outcomes, this.estimatedAverageStepCount, label);
+    public TestOutcomes withLabel(String label,
+                                  RequirementsService requirementsService) {
+        return new TestOutcomes(this.outcomes, this.estimatedAverageStepCount, label, requirementsService);
     }
 
     public TestOutcomes withResultFilter(TestResult testResult) {
-        return new TestOutcomes(this.outcomes, this.estimatedAverageStepCount, label, testResult);
+        return new TestOutcomes(this.outcomes, this.estimatedAverageStepCount, label, testResult, requirementsService);
     }
 
     public TestOutcomes filteredByEnvironmentTags() {
@@ -129,7 +135,7 @@ public class TestOutcomes {
         OutcomeTagFilter outcomeFilter = new OutcomeTagFilter(environmentVariables);
         List<? extends TestOutcome> filteredOutcomes = outcomeFilter.outcomesFilteredByTagIn(getOutcomes());
 
-        return TestOutcomes.of(filteredOutcomes).withLabel(label);
+        return TestOutcomes.of(filteredOutcomes, requirementsService).withLabel(label, requirementsService);
 //        return new TestOutcomes(filteredOutcomes, this.estimatedAverageStepCount, label);
     }
 
@@ -181,21 +187,34 @@ public class TestOutcomes {
 
     public TestOutcomes havingResult(TestResult result) {
 
-        return TestOutcomes.of(outcomesFilteredByResult(result))
-                .withLabel(labelForTestsWithStatus(result.name()))
+        return TestOutcomes.of(outcomesFilteredByResult(result), requirementsService)
+                .withLabel(labelForTestsWithStatus(result.name()), requirementsService)
                 .withResultFilter(result)
                 .withRootOutcomes(getRootOutcomes());
     }
 
-    public static TestOutcomes of(Collection<? extends TestOutcome> outcomes) {
-        return new TestOutcomes(outcomes,ConfiguredEnvironment.getConfiguration().getEstimatedAverageStepCount());
+    public static TestOutcomes of(Collection<? extends TestOutcome> outcomes, RequirementsService requirementsService) {
+        return new TestOutcomes(outcomes, ConfiguredEnvironment.getConfiguration().getEstimatedAverageStepCount(), requirementsService);
     }
+
+    @Deprecated
+    // not efficient to create RequirementsService - use method that passes existing one in
+    public static TestOutcomes of(Collection<? extends TestOutcome> outcomes) {
+        return new TestOutcomes(outcomes, ConfiguredEnvironment.getConfiguration().getEstimatedAverageStepCount(), getRequirementsService());
+    }
+
+    // not efficient to create RequirementsService - avoid calling this method
+    @Deprecated
+    private static RequirementsService getRequirementsService() {
+        return Injectors.getInjector().getInstance(RequirementsService.class);
+    }
+
 
     private static List<TestOutcome> NO_OUTCOMES = new ArrayList<>();
 
 
     public static TestOutcomes withNoResults() {
-        return new TestOutcomes(NO_OUTCOMES,ConfiguredEnvironment.getConfiguration().getEstimatedAverageStepCount());
+        return new TestOutcomes(NO_OUTCOMES, ConfiguredEnvironment.getConfiguration().getEstimatedAverageStepCount(), getRequirementsService());
 
     }
 
@@ -383,8 +402,8 @@ public class TestOutcomes {
             }
         }
 
-        return TestOutcomes.of(testOutcomesForThisRequirement)
-                .withLabel(requirement.getDisplayName())
+        return TestOutcomes.of(testOutcomesForThisRequirement, requirementsService)
+                .withLabel(requirement.getDisplayName(), this.requirementsService)
                 .withTestTag(requirement.asTag())
                 .withRootOutcomes(getRootOutcomes());
     }
@@ -415,7 +434,7 @@ public class TestOutcomes {
                 .filter(outcome -> outcome.typeCompatibleWith(testType))
                 .collect(Collectors.toList());
 
-        return TestOutcomes.of(filteredOutcomes);
+        return TestOutcomes.of(filteredOutcomes, this.requirementsService);
     }
 
     private boolean failedWith(TestOutcome outcome, String testFailureErrorType) {
@@ -486,7 +505,7 @@ public class TestOutcomes {
                 .filter(outcome -> failedWith(outcome, testFailureErrorType))
                 .collect(Collectors.toList());
 
-        return TestOutcomes.of(filteredOutcomes).withLabel("");
+        return TestOutcomes.of(filteredOutcomes, this.requirementsService).withLabel("", this.requirementsService);
     }
 
     public TestOutcomes withResult(TestResult result) {
@@ -496,7 +515,7 @@ public class TestOutcomes {
                 .filter(outcome -> countScenariosWithResult(result, outcome) > 0)
                 .collect(Collectors.toList());
 
-        return TestOutcomes.of(filteredOutcomes);
+        return TestOutcomes.of(filteredOutcomes, this.requirementsService);
     }
 
     public TestOutcomes withRequirementsTags() {
@@ -592,7 +611,7 @@ public class TestOutcomes {
                 .filter(outcome -> outcome.hasTagWithType(tagType))
                 .collect(Collectors.toList());
 
-        return TestOutcomes.of(testOutcomesWithTags).withLabel(tagType).withRootOutcomes(getRootOutcomes());
+        return TestOutcomes.of(testOutcomesWithTags, this.requirementsService).withLabel(tagType, this.requirementsService).withRootOutcomes(getRootOutcomes());
     }
 
     public TestOutcomes withTagTypes(List<String> tagTypes) {
@@ -601,12 +620,12 @@ public class TestOutcomes {
                 .filter(outcome -> outcome.hasTagWithTypes(tagTypes))
                 .collect(Collectors.toList());
 
-        return TestOutcomes.of(testOutcomesWithTags).withLabel(Joiner.on(",").join(tagTypes))
-                           .withRootOutcomes(getRootOutcomes());
+        return TestOutcomes.of(testOutcomesWithTags, this.requirementsService).withLabel(Joiner.on(",").join(tagTypes), this.requirementsService)
+                .withRootOutcomes(getRootOutcomes());
     }
 
     private TestOutcomes withRootOutcomes(TestOutcomes rootOutcomes) {
-        return new TestOutcomes(this.outcomes, this.estimatedAverageStepCount, this.label, this.testTag, this.resultFilter, rootOutcomes, environmentVariables);
+        return new TestOutcomes(this.outcomes, this.estimatedAverageStepCount, this.label, this.testTag, this.resultFilter, rootOutcomes, environmentVariables, this.requirementsService);
     }
 
     /**
@@ -621,13 +640,13 @@ public class TestOutcomes {
                 .filter(outcome -> outcome.hasTagWithName(tagName))
                 .collect(Collectors.toList());
 
-        return TestOutcomes.of(testOutcomesWithTags).withLabel(tagName).withRootOutcomes(getRootOutcomes());
+        return TestOutcomes.of(testOutcomesWithTags, this.requirementsService).withLabel(tagName, this.requirementsService).withRootOutcomes(getRootOutcomes());
     }
 
     public TestOutcomes withTag(TestTag tag) {
         List<? extends TestOutcome> outcomesWithMatchingTag = matchingOutcomes(outcomes, tag);
-        return TestOutcomes.of(outcomesWithMatchingTag)
-                           .withLabel(tag.getShortName())
+        return TestOutcomes.of(outcomesWithMatchingTag, this.requirementsService)
+                .withLabel(tag.getShortName(), this.requirementsService)
                            .withTestTag(tag)
                            .withRootOutcomes(getRootOutcomes());
     }
@@ -635,12 +654,12 @@ public class TestOutcomes {
     public TestOutcomes withCardNumber(String issueCardNumber) {
         List<? extends TestOutcome> outcomesWithMatchingTag
                 = matchingOutcomes(outcomes, TestTag.withName(issueCardNumber).andType("issue"));
-        return TestOutcomes.of(outcomesWithMatchingTag)
+        return TestOutcomes.of(outcomesWithMatchingTag, this.requirementsService)
                 .withTestTag(TestTag.withName(issueCardNumber).andType("issue"))
                 .withRootOutcomes(getRootOutcomes());
     }
     private TestOutcomes withTestTag(TestTag tag) {
-        return new TestOutcomes(this.outcomes, this.estimatedAverageStepCount, label, tag);
+        return new TestOutcomes(this.outcomes, this.estimatedAverageStepCount, label, tag, requirementsService);
     }
 
     public TestOutcomes withTags(Collection<TestTag> tags) {
@@ -648,7 +667,7 @@ public class TestOutcomes {
         for (TestTag tag : tags) {
             filteredOutcomes.addAll(matchingOutcomes(outcomes, tag));
         }
-        return TestOutcomes.of(filteredOutcomes);
+        return TestOutcomes.of(filteredOutcomes, this.requirementsService);
     }
 
     private List<? extends TestOutcome> matchingOutcomes(List<? extends TestOutcome> outcomes, TestTag tag) {
@@ -688,8 +707,8 @@ public class TestOutcomes {
     }
 
     public TestOutcomes getUnsuccessfulTests() {
-        return TestOutcomes.of(outcomesFilteredByResult(TestResult.ERROR, TestResult.FAILURE,  TestResult.COMPROMISED))
-                .withLabel(labelForTestsWithStatus("unsuccessful tests"))
+        return TestOutcomes.of(outcomesFilteredByResult(TestResult.ERROR, TestResult.FAILURE, TestResult.COMPROMISED), this.requirementsService)
+                .withLabel(labelForTestsWithStatus("unsuccessful tests"), this.requirementsService)
                 .withResultFilter(TestResult.UNSUCCESSFUL)
                 .withRootOutcomes(getRootOutcomes());
     }
@@ -700,22 +719,22 @@ public class TestOutcomes {
      * @return A new set of test outcomes containing only the failing tests
      */
     public TestOutcomes getFailingTests() {
-        return TestOutcomes.of(outcomesFilteredByResult(TestResult.FAILURE))
-                .withLabel(labelForTestsWithStatus("failing tests"))
+        return TestOutcomes.of(outcomesFilteredByResult(TestResult.FAILURE), this.requirementsService)
+                .withLabel(labelForTestsWithStatus("failing tests"), this.requirementsService)
                 .withResultFilter(TestResult.FAILURE)
                 .withRootOutcomes(getRootOutcomes());
     }
 
     public TestOutcomes getErrorTests() {
-        return TestOutcomes.of(outcomesFilteredByResult(TestResult.ERROR))
-                .withLabel(labelForTestsWithStatus("tests with errors"))
+        return TestOutcomes.of(outcomesFilteredByResult(TestResult.ERROR), this.requirementsService)
+                .withLabel(labelForTestsWithStatus("tests with errors"), this.requirementsService)
                 .withResultFilter(TestResult.ERROR)
                 .withRootOutcomes(getRootOutcomes());
     }
 
     public TestOutcomes getCompromisedTests() {
         return TestOutcomes.of(outcomesFilteredByResult(TestResult.COMPROMISED))
-                .withLabel(labelForTestsWithStatus("compromised tests"))
+                .withLabel(labelForTestsWithStatus("compromised tests"), this.requirementsService)
                 .withResultFilter(TestResult.COMPROMISED)
                 .withRootOutcomes(getRootOutcomes());
     }
@@ -734,8 +753,8 @@ public class TestOutcomes {
      * @return A new set of test outcomes containing only the successful tests
      */
     public TestOutcomes getPassingTests() {
-        return TestOutcomes.of(outcomesFilteredByResult(TestResult.SUCCESS))
-                .withLabel(labelForTestsWithStatus("passing tests"))
+        return TestOutcomes.of(outcomesFilteredByResult(TestResult.SUCCESS), this.requirementsService)
+                .withLabel(labelForTestsWithStatus("passing tests"), this.requirementsService)
                 .withResultFilter(TestResult.SUCCESS)
                 .withRootOutcomes(getRootOutcomes());
     }
@@ -748,8 +767,8 @@ public class TestOutcomes {
     public TestOutcomes getPendingTests() {
 
         List<TestOutcome> pendingOutcomes = outcomesWithResults(outcomes, TestResult.PENDING);
-        return TestOutcomes.of(pendingOutcomes)
-                .withLabel(labelForTestsWithStatus("pending tests"))
+        return TestOutcomes.of(pendingOutcomes, this.requirementsService)
+                .withLabel(labelForTestsWithStatus("pending tests"), this.requirementsService)
                 .withResultFilter(TestResult.PENDING)
                 .withRootOutcomes(getRootOutcomes());
 

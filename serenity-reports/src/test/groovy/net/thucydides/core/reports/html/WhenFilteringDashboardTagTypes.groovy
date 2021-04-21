@@ -7,7 +7,6 @@ import spock.lang.Specification
 class WhenFilteringDashboardTagTypes extends Specification {
 
     def environmentVariables = new MockEnvironmentVariables()
-
     def "should display all tag types by default"() {
         given:
             def tagFilter = new TagFilter(environmentVariables)
