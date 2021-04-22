@@ -24,7 +24,7 @@ public class RequirementsCacheService {
                                 FileSystemRequirementsTagProvider provider = requirementsKey.equals(RequirementsKey.forDefault()) ?
                                         new FileSystemRequirementsTagProvider() :
                                         new FileSystemRequirementsTagProvider(requirementsKey.topLevelDirectory, requirementsKey.rootDirectory, requirementsKey.level, Injectors.getInjector().getInstance(EnvironmentVariables.class));
-                                LOGGER.debug("Cached {} requirements for {} in {}", provider.getRequirements().size(), requirementsKey, stopwatch.lapTimeFormatted());
+                                LOGGER.debug("Cached requirements for {} in {}", requirementsKey, stopwatch.lapTimeFormatted());
                                 return provider;
                             }
                         });
@@ -32,7 +32,10 @@ public class RequirementsCacheService {
 
     public FileSystemRequirementsTagProvider query(RequirementsKey requirementsKey) {
         try {
-            return cache.get(requirementsKey);
+            Stopwatch stopwatch = Stopwatch.started();
+            FileSystemRequirementsTagProvider fileSystemRequirementsTagProvider = cache.get(requirementsKey);
+            LOGGER.debug("Queried requirements for {} in {}", requirementsKey, stopwatch.lapTimeFormatted());
+            return fileSystemRequirementsTagProvider;
         } catch (Exception e) {
             String message = String.format("Could not query FileSystemRequirementsTagProvider for %s", requirementsKey);
             throw new CouldNotLoadRequirementsException(message, e);

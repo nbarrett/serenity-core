@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -64,11 +65,9 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
 
     private final RequirementsConfiguration requirementsConfiguration;
 
-    private final List<Requirement> requirements;
-    private final Map<Requirement, String> normalisedRequirementsPaths;
-
-    private final int maxDepth;
-    private final String topLevelDirectory;
+    //    @Transient
+    private volatile List<Requirement> requirements;
+    private volatile Map<Requirement, String> normalisedRequirementsPaths;
 
     public FileSystemRequirementsTagProvider(EnvironmentVariables environmentVariables) {
         this(environmentVariables,
@@ -80,53 +79,11 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
     }
 
     public FileSystemRequirementsTagProvider() {
-        this(Injectors.getInjector().getInstance(EnvironmentVariables.class));
+        this(Injectors.getInjector().getProvider(EnvironmentVariables.class).get());
     }
 
     public FileSystemRequirementsTagProvider(String rootDirectory, int level) {
         this(filePathFormOf(rootDirectory), level, Injectors.getInjector().getProvider(EnvironmentVariables.class).get());
-    }
-
-    public FileSystemRequirementsTagProvider(String rootDirectory, EnvironmentVariables environmentVariables) {
-        super(environmentVariables, rootDirectory);
-
-        topLevelDirectory = rootDirectory;
-        requirementTypes = new RequirementsConfiguration(environmentVariables, rootDirectory).getRequirementTypes();
-        this.narrativeReader = NarrativeReader.forRootDirectory(environmentVariables, rootDirectory);
-        this.overviewReader = new OverviewReader();
-        this.requirementsConfiguration = new RequirementsConfiguration(environmentVariables);
-
-        directoryPaths = rootDirectories(rootDirectory, environmentVariables);
-
-        this.level = requirementsConfiguration.startLevelForADepthOf(maxDirectoryDepthIn(directoryPaths) + 1);
-        maxDepth = maxDirectoryDepthIn(directoryPaths);
-        this.requirements = findRequirements();
-        this.normalisedRequirementsPaths = findNormalisedPaths();
-    }
-
-    private Map<Requirement, String> findNormalisedPaths() {
-        return AllRequirements.asStreamFrom(requirements)
-                .filter(requirement -> requirement.getPath() != null)
-                .collect(toMap(Function.identity(), requirement -> normalise(requirement.getPath()), (s, s2) -> s));
-    }
-
-    public FileSystemRequirementsTagProvider(String rootDirectory, int level, EnvironmentVariables environmentVariables) {
-        this(rootDirectory, rootDirectory, level, environmentVariables);
-    }
-
-    public FileSystemRequirementsTagProvider(String topLevelDirectory, String rootDirectory, int level, EnvironmentVariables environmentVariables) {
-        super(environmentVariables, rootDirectory);
-        this.topLevelDirectory = topLevelDirectory;
-        requirementTypes = new RequirementsConfiguration(environmentVariables, rootDirectory).getRequirementTypes();
-        this.narrativeReader = NarrativeReader.forRootDirectory(environmentVariables, rootDirectory);
-//                .withRequirementTypes(getRequirementTypes());
-        this.overviewReader = new OverviewReader();
-        directoryPaths = rootDirectories(rootDirectory, environmentVariables);
-        this.requirementsConfiguration = new RequirementsConfiguration(environmentVariables);
-        this.level = level;//requirementsConfiguration.initialLevel();
-        maxDepth = maxDirectoryDepthIn(directoryPaths);
-        this.requirements = findRequirements();
-        this.normalisedRequirementsPaths = findNormalisedPaths();
     }
 
     private String baseDirectory() {
@@ -153,6 +110,45 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
         }
     }
 
+    private int maxDepth;
+    private final String topLevelDirectory;
+    private Set<String> requirementsDirectoryPaths;
+
+    public FileSystemRequirementsTagProvider(String rootDirectory, EnvironmentVariables environmentVariables) {
+        super(environmentVariables, rootDirectory);
+
+        topLevelDirectory = rootDirectory;
+        requirementTypes = new RequirementsConfiguration(environmentVariables, rootDirectory).getRequirementTypes();
+        this.narrativeReader = NarrativeReader.forRootDirectory(environmentVariables, rootDirectory);
+//                .withRequirementTypes(getRequirementTypes(rootDirectory));
+        this.overviewReader = new OverviewReader();
+        this.requirementsConfiguration = new RequirementsConfiguration(environmentVariables);
+
+        directoryPaths = rootDirectories(rootDirectory, environmentVariables);
+
+        this.level = requirementsConfiguration.startLevelForADepthOf(maxDirectoryDepthIn(directoryPaths) + 1);
+        maxDepth = maxDirectoryDepthIn(directoryPaths);
+        requirementsDirectoryPaths = RootDirectory.definedIn(environmentVariables).requirementsDirectoryNames();
+    }
+
+    public FileSystemRequirementsTagProvider(String rootDirectory, int level, EnvironmentVariables environmentVariables) {
+        this(rootDirectory, rootDirectory, level, environmentVariables);
+    }
+
+    public FileSystemRequirementsTagProvider(String topLevelDirectory, String rootDirectory, int level, EnvironmentVariables environmentVariables) {
+        super(environmentVariables, rootDirectory);
+
+        this.topLevelDirectory = topLevelDirectory;
+        requirementTypes = new RequirementsConfiguration(environmentVariables, rootDirectory).getRequirementTypes();
+        this.narrativeReader = NarrativeReader.forRootDirectory(environmentVariables, rootDirectory);
+//                .withRequirementTypes(getRequirementTypes());
+        this.overviewReader = new OverviewReader();
+        directoryPaths = rootDirectories(rootDirectory, environmentVariables);
+        this.requirementsConfiguration = new RequirementsConfiguration(environmentVariables);
+        this.level = level;//requirementsConfiguration.initialLevel();
+        maxDepth = maxDirectoryDepthIn(directoryPaths);
+    }
+
     private static Set<String> rootDirectories(String rootDirectory, EnvironmentVariables environmentVariables) {
         return new RootDirectory(environmentVariables, rootDirectory).getRootDirectoryPaths();
     }
@@ -161,26 +157,39 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
         this(filePathFormOf(rootDirectory), Injectors.getInjector().getProvider(EnvironmentVariables.class).get());
     }
 
+    private final Object requirementsLock = new Object();
+
     /**
      * We look for file system requirements in the root directory path (by default, 'stories').
      * First, we look on the classpath. If we don't find anything on the classpath (e.g. if the task is
      * being run from the Maven plugin), we look in the src/main/resources and src/test/resources directories starting
      * at the working directory.
      */
-    private List<Requirement> findRequirements() {
-        Stopwatch stopwatch = Stopwatch.started();
-        List<Requirement> requirements = getRootDirectoryPaths()
-                .stream()
-                .map(this::capabilitiesAndStoriesIn)
-                .flatMap(Collection::stream)
-                .sorted()
-                .collect(toList());
-        requirements = RequirementAncestry.addParentsTo(requirements);
-        logger.debug("At {} Generated {} requirements below root directory {} in {}", new DateTime().toDate(), requirements.size(), topLevelDirectory, stopwatch.lapTimeFormatted());
-        return requirements;
-    }
-
     public List<Requirement> getRequirements() {
+
+        if (requirements == null) {
+            synchronized (requirementsLock) {
+                if (requirements == null) {
+                    Stopwatch stopwatch = Stopwatch.started();
+                    requirements = getRootDirectoryPaths()
+                            .stream()
+                            .map(this::capabilitiesAndStoriesIn)
+                            .flatMap(Collection::stream)
+                            .sorted()
+                            .collect(toList());
+                    requirements = RequirementAncestry.addParentsTo(requirements);
+                    normalisedRequirementsPaths = AllRequirements.asStreamFrom(requirements)
+                            .filter(requirement -> requirement.getPath() != null)
+                            .collect(toMap(Function.identity(), requirement -> normalise(requirement.getPath()), new BinaryOperator<String>() {
+                                @Override
+                                public String apply(String s, String s2) {
+                                    return s;
+                                }
+                            }));
+                    logger.debug("At {} queried {} requirements for topLevelDirectory {} in {}", new DateTime().toDate(), requirements.size(), topLevelDirectory, stopwatch.lapTimeFormatted());
+                }
+            }
+        }
         return requirements;
     }
 
@@ -194,10 +203,12 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
         if (rootDirectory.exists()) {
 
             loadCapabilitiesFrom(rootDirectory.listFiles(thatAreFeatureDirectories())).forEach(
-                    allRequirements::add);
+                    capability -> allRequirements.add(capability)
+            );
 
             loadStoriesFrom(rootDirectory.listFiles(thatAreStories())).forEach(
-                    allRequirements::add);
+                    leafRequirement -> allRequirements.add(leafRequirement)
+            );
         }
         return allRequirements;
     }
@@ -828,14 +839,14 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
     }
 
     private FileFilter thatAreNarratives() {
-        return file -> file.getName().equalsIgnoreCase("narrative.txt")
-                || file.getName().equalsIgnoreCase("narrative.md")
-                || file.getName().equalsIgnoreCase("readme.md")
-                || file.getName().equalsIgnoreCase("placeholder.txt");
+        return file -> file.getName().toLowerCase().equals("narrative.txt")
+                || file.getName().toLowerCase().equals("narrative.md")
+                || file.getName().toLowerCase().equals("readme.md")
+                || file.getName().toLowerCase().equals("placeholder.txt");
     }
 
     private boolean isSupportedFileStoryExtension(String storyFileExtension) {
-        return (storyFileExtension.equalsIgnoreCase(FEATURE_EXTENSION) || storyFileExtension.equalsIgnoreCase(STORY_EXTENSION));
+        return (storyFileExtension.toLowerCase().equals(FEATURE_EXTENSION) || storyFileExtension.toLowerCase().equals(STORY_EXTENSION));
     }
 
     public Optional<String> getOverview() {

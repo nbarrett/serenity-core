@@ -1,9 +1,10 @@
 package net.thucydides.core.requirements;
 
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+
 import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
 import static org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode;
-import static org.apache.commons.lang3.builder.ToStringStyle.JSON_STYLE;
+import static org.apache.commons.lang3.builder.ToStringStyle.NO_CLASS_NAME_STYLE;
 
 public class RequirementsKey {
     public final String topLevelDirectory;
@@ -36,6 +37,6 @@ public class RequirementsKey {
 
     @Override
     public String toString() {
-        return ReflectionToStringBuilder.toString(this, JSON_STYLE);
+        return ReflectionToStringBuilder.toString(this, NO_CLASS_NAME_STYLE);
     }
 }
