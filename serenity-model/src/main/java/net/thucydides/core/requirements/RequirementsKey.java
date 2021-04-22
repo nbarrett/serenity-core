@@ -1,7 +1,9 @@
 package net.thucydides.core.requirements;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
+import static org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode;
+import static org.apache.commons.lang3.builder.ToStringStyle.JSON_STYLE;
 
 public class RequirementsKey {
     public final String topLevelDirectory;
@@ -23,18 +25,17 @@ public class RequirementsKey {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RequirementsKey that = (RequirementsKey) o;
-
-        return new EqualsBuilder().append(level, that.level).append(topLevelDirectory, that.topLevelDirectory).append(rootDirectory, that.rootDirectory).isEquals();
+    public int hashCode() {
+        return reflectionHashCode(this);
     }
 
     @Override
-    public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(topLevelDirectory).append(rootDirectory).append(level).toHashCode();
+    public boolean equals(Object rhs) {
+        return reflectionEquals(this, rhs);
+    }
+
+    @Override
+    public String toString() {
+        return ReflectionToStringBuilder.toString(this, JSON_STYLE);
     }
 }
