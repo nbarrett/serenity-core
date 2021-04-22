@@ -15,6 +15,7 @@ import net.thucydides.core.util.EnvironmentVariables;
 import net.thucydides.core.util.Inflector;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
     }
 
     public FileSystemRequirementsTagProvider() {
-        this(Injectors.getInjector().getProvider(EnvironmentVariables.class).get());
+        this(Injectors.getInjector().getInstance(EnvironmentVariables.class));
     }
 
     public FileSystemRequirementsTagProvider(String rootDirectory, int level) {
@@ -175,7 +176,7 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
                 .sorted()
                 .collect(toList());
         requirements = RequirementAncestry.addParentsTo(requirements);
-        logger.debug("Generated {} requirements below root directory {} in {}", requirements.size(), topLevelDirectory, stopwatch.lapTimeFormatted());
+        logger.debug("At {} Generated {} requirements below root directory {} in {}", new DateTime().toDate(), requirements.size(), topLevelDirectory, stopwatch.lapTimeFormatted());
         return requirements;
     }
 

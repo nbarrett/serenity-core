@@ -818,9 +818,11 @@ public class TestOutcomes {
      * @return The total number of test runs in this set (including rows in data-driven tests).
      */
     public int getTotal() {
-        return outcomes.stream()
-                .mapToInt(TestOutcome::getTestCount)
-                .sum();
+        int total = 0;
+        for (TestOutcome outcome : outcomes) {
+            total += outcome.getTestCount();
+        }
+        return total;
     }
 
     public int getTotalMatchingScenarios() {
