@@ -18,7 +18,8 @@ public class FileSystemRequirementsService extends BaseRequirementsService imple
 
     public FileSystemRequirementsService(String rootPath) {
         super(Injectors.getInjector().getProvider(EnvironmentVariables.class).get());
-        this.fileSystemRequirementsTagProvider = new FileSystemRequirementsTagProvider(environmentVariables, rootPath);
+        RequirementsCacheService cache = Injectors.getInjector().getInstance(RequirementsCacheService.class);
+        this.fileSystemRequirementsTagProvider = cache.query(RequirementsKey.forRootPath(rootPath));
     }
 
     @Override

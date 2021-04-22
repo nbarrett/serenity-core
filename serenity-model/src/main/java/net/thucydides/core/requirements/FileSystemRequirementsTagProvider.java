@@ -739,12 +739,13 @@ public class FileSystemRequirementsTagProvider extends AbstractRequirementsTagPr
     }
 
     private List<Requirement> readChildrenFrom(File requirementDirectory) {
+        RequirementsCacheService cache = Injectors.getInjector().getInstance(RequirementsCacheService.class);
         String childDirectory = rootDirectory + "/" + requirementDirectory.getName();
         if (childrenExistFor(childDirectory)) {
-            RequirementsTagProvider childReader = new FileSystemRequirementsTagProvider(rootDirectory, childDirectory, level + 1, environmentVariables);
+            RequirementsTagProvider childReader = cache.query(new RequirementsKey(rootDirectory, childDirectory, level + 1));
             return childReader.getRequirements();
         } else if (childrenExistFor(requirementDirectory.getPath())) {
-            RequirementsTagProvider childReader = new FileSystemRequirementsTagProvider(rootDirectory, requirementDirectory.getPath(), level + 1, environmentVariables);
+            RequirementsTagProvider childReader = cache.query(new RequirementsKey(rootDirectory, requirementDirectory.getPath(), level + 1));
             return childReader.getRequirements();
         } else {
             return NO_REQUIREMENTS;

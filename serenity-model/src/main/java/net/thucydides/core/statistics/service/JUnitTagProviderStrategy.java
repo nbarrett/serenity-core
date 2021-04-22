@@ -2,8 +2,10 @@ package net.thucydides.core.statistics.service;
 
 
 import net.serenitybdd.core.collect.NewSet;
-import net.thucydides.core.requirements.FileSystemRequirementsTagProvider;
+import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.requirements.PackageRequirementsTagProvider;
+import net.thucydides.core.requirements.RequirementsCacheService;
+import net.thucydides.core.requirements.RequirementsKey;
 import net.thucydides.core.steps.TestSourceType;
 
 
@@ -19,7 +21,7 @@ public class JUnitTagProviderStrategy implements TagProviderStrategy {
         return NewSet.of(
                 new PackageRequirementsTagProvider(),
                 new AnnotationBasedTagProvider(),
-                new FileSystemRequirementsTagProvider(),
+                Injectors.getInjector().getInstance(RequirementsCacheService.class).query(RequirementsKey.forDefault()),
                 new FeatureStoryTagProvider(),
                 new InjectedTagProvider(),
                 new ContextTagProvider()

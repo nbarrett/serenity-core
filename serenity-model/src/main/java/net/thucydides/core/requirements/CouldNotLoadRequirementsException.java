@@ -8,4 +8,7 @@ import java.io.IOException;
 public class CouldNotLoadRequirementsException extends RuntimeException {
     public CouldNotLoadRequirementsException(IOException e) {
     }
+    public CouldNotLoadRequirementsException(String message, Exception e) {
+        super(message, e);
+    }
 }

@@ -1,11 +1,14 @@
 package net.thucydides.core.requirements.reports;
 
 import net.serenitybdd.core.collect.NewList;
+import net.thucydides.core.guice.Injectors;
 import net.thucydides.core.issues.IssueTracking;
 import net.thucydides.core.issues.SystemPropertiesIssueTracking;
 import net.thucydides.core.reports.TestOutcomes;
 import net.thucydides.core.reports.html.ReportNameProvider;
 import net.thucydides.core.requirements.FileSystemRequirementsTagProvider;
+import net.thucydides.core.requirements.RequirementsCacheService;
+import net.thucydides.core.requirements.RequirementsKey;
 import net.thucydides.core.requirements.RequirementsTagProvider;
 import net.thucydides.core.requirements.model.Requirement;
 import net.thucydides.core.util.EnvironmentVariables;
@@ -34,7 +37,7 @@ public class FileSystemRequirmentsOutcomeFactory implements RequirementsOutcomeF
                                                ReportNameProvider reportNameProvider) {
         this.issueTracking = issueTracking;
         this.environmentVariables = environmentVariables;
-        this.tagProvider = new FileSystemRequirementsTagProvider(environmentVariables);
+        this.tagProvider = Injectors.getInjector().getInstance(RequirementsCacheService.class).query(RequirementsKey.forDefault());
         this.reportNameProvider = reportNameProvider;
     }
 
@@ -44,7 +47,7 @@ public class FileSystemRequirmentsOutcomeFactory implements RequirementsOutcomeF
                                                String rootDirectoryPath) {
         this.issueTracking = issueTracking;
         this.environmentVariables = environmentVariables;
-        this.tagProvider = new FileSystemRequirementsTagProvider(environmentVariables, rootDirectoryPath);
+        this.tagProvider = Injectors.getInjector().getInstance(RequirementsCacheService.class).query(RequirementsKey.forRootPath(rootDirectoryPath));
         this.reportNameProvider = reportNameProvider;
     }
 

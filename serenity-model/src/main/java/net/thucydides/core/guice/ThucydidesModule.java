@@ -29,6 +29,7 @@ import net.thucydides.core.reports.templates.FreeMarkerTemplateManager;
 import net.thucydides.core.reports.templates.TemplateManager;
 import net.thucydides.core.requirements.ClasspathRequirementsProviderService;
 import net.thucydides.core.requirements.MultiSourceRequirementsService;
+import net.thucydides.core.requirements.RequirementsCacheService;
 import net.thucydides.core.requirements.RequirementsProviderService;
 import net.thucydides.core.requirements.RequirementsService;
 import net.thucydides.core.statistics.AtomicTestCount;
@@ -57,6 +58,7 @@ public class ThucydidesModule extends AbstractModule {
         bind(TagProviderService.class).to(ClasspathTagProviderService.class).in(Singleton.class);
         bind(RequirementsProviderService.class).to(ClasspathRequirementsProviderService.class).in(Singleton.class);
         bind(RequirementsService.class).to(MultiSourceRequirementsService.class).in(Singleton.class);
+        bind(RequirementsCacheService.class).in(Singleton.class);
         bind(DependencyInjectorService.class).to(ClasspathDependencyInjectorService.class).in(Singleton.class);
 
         bind(StepListener.class).annotatedWith(ThucydidesLogging.class).to(ConsoleLoggingListener.class).in(Singleton.class);
